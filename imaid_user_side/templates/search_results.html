@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Maid Details</title>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.0/css/bootstrap.min.css">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+        }
+
+        .navbar {
+            background-color: #343a40;
+        }
+
+        .navbar-brand {
+            font-weight: bold;
+            color: #fff;
+        }
+
+        .navbar-nav .nav-link {
+            background-color: #343a40;
+            color: #fff;
+            border: none;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        h1 {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        #searchField {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 20px;
+            box-sizing: border-box;
+        }
+
+        ul {
+            list-style-type: none;
+            padding: 0;
+        }
+
+        li {
+            background-color: #f5f5f5;
+            padding: 15px;
+            margin-bottom: 10px;
+            border-radius: 5px;
+        }
+
+        p {
+            margin: 0;
+            font-weight: bold;
+        }
+
+        .carousel-item {
+            height: 400px;
+            background-size: cover;
+            background-position: center;
+        }
+
+        .carousel-caption {
+            text-align: center;
+            bottom: 25%;
+        }
+
+        .pagination {
+            display: flex;
+            justify-content: center;
+            margin-top: 20px;
+        }
+
+        .pagination .page-item {
+            display: flex;
+            align-items: center;
+        }
+
+        .pagination .page-link {
+            margin: 0 5px;
+            cursor: pointer;
+        }
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@1.15.0"></script>
+</head>
+
+<body>
+    <nav class="navbar navbar-expand-lg">
+        <div class="container">
+            <a class="navbar-brand" href="#">Maid Details</a>
+            <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav"
+                aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ml-auto">
+                    <li class="nav-item active">
+                        <a class="nav-link" href="#">Home</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#search">Search</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#">Contact Us</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#">About Us</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div id="carouselExampleIndicators" class="carousel slide" data-ride="carousel">
+        <ol class="carousel-indicators">
+            <li data-target="#carouselExampleIndicators" data-slide-to="0" class="active"></li>
+            <li data-target="#carouselExampleIndicators" data-slide-to="1"></li>
+            <li data-target="#carouselExampleIndicators" data-slide-to="2"></li>
+        </ol>
+        <div class="carousel-inner">
+            <div class="carousel-item active"
+                style="background-image: url('https://picsum.photos/1125/365?random=2');">
+                <div class="carousel-caption">
+                    <h3>Slide 1</h3>
+                    <p>Some text for slide 1</p>
+                </div>
+            </div>
+            <div class="carousel-item" style="background-image: url('https://picsum.photos/1125/365?random=3');">
+                <div class="carousel-caption">
+                    <h3>Slide 2</h3>
+                    <p>Some text for slide 2</p>
+                </div>
+            </div>
+            <div class="carousel-item" style="background-image: url('https://picsum.photos/1125/365?random=4');">
+                <div class="carousel-caption">
+                    <h3>Slide 3</h3>
+                    <p>Some text for slide 3</p>
+                </div>
+            </div>
+        </div>
+        <a class="carousel-control-prev" href="#carouselExampleIndicators" role="button" data-slide="prev">
+            <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+            <span class="sr-only">Previous</span>
+        </a>
+        <a class="carousel-control-next" href="#carouselExampleIndicators" role="button" data-slide="next">
+            <span class="carousel-control-next-icon" aria-hidden="true"></span>
+            <span class="sr-only">Next</span>
+        </a>
+    </div>
+
+    <div class="container" id="search">
+        <h1>Maid Details</h1>
+        <input type="text" id="searchField" placeholder="Search..." oninput="filterMaidData()">
+        <ul id="maidList"></ul>
+        <nav>
+            <ul id="pagination" class="pagination"></ul>
+        </nav>
+    </div>
+
+    <script>
+        const supabaseUrl = 'https://scwujjreobpuxdlbaojp.supabase.co';
+        const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNjd3VqanJlb2JwdXhkbGJhb2pwIiwicm9sZSI6ImFub24iLCJpYXQiOjE2Nzg2NDUzNjQsImV4cCI6MTk5NDIyMTM2NH0.ialCpqxh-PJz1FRW4MSDXQvmnI_NWHsprqmfe5wZvCQ';
+        const client = supabase.createClient(supabaseUrl, supabaseKey);
+
+        const maidTable = 'maidregisterdetails';
+        const itemsPerPage = 5;
+        let currentPage = 1;
+
+        async function fetchMaidData() {
+            const { data, error } = await client.from(maidTable).select('*');
+            if (error) {
+                console.error('Error fetching maid data:', error);
+                return [];
+            }
+
+            return data;
+        }
+
+        function displayMaidData(maidData, page) {
+            const maidList = document.getElementById('maidList');
+            maidList.innerHTML = '';
+
+            const startIndex = (page - 1) * itemsPerPage;
+            const endIndex = startIndex + itemsPerPage;
+            const paginatedData = maidData.slice(startIndex, endIndex);
+
+            paginatedData.forEach((maid) => {
+                const listItem = document.createElement('li');
+
+                const nameElement = document.createElement('p');
+                nameElement.textContent = `Name: ${maid.name}`;
+                listItem.appendChild(nameElement);
+
+                const ageElement = document.createElement('p');
+                ageElement.textContent = `Address: ${maid.address}`;
+                listItem.appendChild(ageElement);
+
+                const nationalityElement = document.createElement('p');
+                nationalityElement.textContent = `Contact: ${maid.contact}`;
+                listItem.appendChild(nationalityElement);
+
+                maidList.appendChild(listItem);
+            });
+        }
+
+        async function filterMaidData() {
+            const searchField = document.getElementById('searchField');
+            const maidList = document.getElementById('maidList');
+            maidList.innerHTML = '';
+
+            const searchQuery = searchField.value.trim().toLowerCase();
+
+            if (searchQuery === '') {
+                const maidData = await fetchMaidData();
+                displayMaidData(maidData, currentPage);
+                createPagination(maidData.length);
+                return;
+            }
+
+            const maidData = await fetchMaidData();
+
+            const filteredData = maidData.filter((maid) => {
+                return maid.address.toLowerCase().includes(searchQuery);
+            });
+
+            displayMaidData(filteredData, currentPage);
+            createPagination(filteredData.length);
+        }
+
+        function createPagination(totalItems) {
+            const pagination = document.getElementById('pagination');
+            pagination.innerHTML = '';
+
+            const totalPages = Math.ceil(totalItems / itemsPerPage);
+
+            const previousButton = createPaginationButton('Previous', currentPage > 1, () => {
+                currentPage--;
+                filterMaidData();
+            });
+            pagination.appendChild(previousButton);
+
+            for (let i = 1; i <= totalPages; i++) {
+                const pageButton = createPaginationButton(i, i !== currentPage, () => {
+                    currentPage = i;
+                    filterMaidData();
+                });
+                pagination.appendChild(pageButton);
+            }
+
+            const nextButton = createPaginationButton('Next', currentPage < totalPages, () => {
+                currentPage++;
+                filterMaidData();
+            });
+            pagination.appendChild(nextButton);
+        }
+
+        function createPaginationButton(text, isEnabled, onClick) {
+            const button = document.createElement('button');
+            button.textContent = text;
+            button.disabled = !isEnabled;
+            button.addEventListener('click', onClick);
+
+            const listItem = document.createElement('li');
+            listItem.classList.add('page-item');
+            listItem.appendChild(button);
+
+            return listItem;
+        }
+
+        function fetchLocationFromIP() {
+            fetch('https://ipapi.co/json/')
+                .then((response) => response.json())
+                .then((data) => {
+                    const location = `${data.city}, ${data.region}`;
+                    const searchField = document.getElementById('searchField');
+                    searchField.value = location;
+                    filterMaidData();
+                })
+                .catch((error) => {
+                    console.error('Error retrieving location:', error);
+                });
+        }
+
+        fetchLocationFromIP();
+    </script>
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@1.16.1/dist/umd/popper.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.0/js/bootstrap.min.js"></script>
+</body>
+
+</html>
